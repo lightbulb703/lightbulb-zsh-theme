@@ -1,25 +1,50 @@
 # lightbulb.zsh-theme
 
 # Tested on Fedora and CentOS, this theme presents OS, time and directory information in the prompt
+# Basic functionality was tested on Ubuntu
+# This update adds a feature to notify you if a reboot is requested.
 
 function virtualenv_info {
   [ $VIRTUAL_ENV ] && echo '('`basename $VIRTUAL_ENV`') '
 }
 
+function reboot_checker () {
+  local notice=""
+  case $1 in
+    fedora | rhel | centos)
+      if [[ -z $(which needs-restarting 2> /dev/null) ]]; then
+        notice=" - %{$fg[cyan]%}To get restart notifications, install yum-utils/dnf-utils%{$reset_color%}"
+      elif ! needs-restarting -r > /dev/null ; then
+        notice=" - %{$fg_bold[red]%}***REBOOT REQUESTED***%{$reset_color%}"
+      fi
+      ;;
+    debian | ubuntu | kali)
+      if [[ -f /var/run/reboot-required ]]; then
+        notice=" - %{$fg_bold[red]%}***REBOOT REQUESTED***%{$reset_color%}"
+      fi
+      ;;
+    *)
+      ;;
+  esac
+  echo "$notice"
+}
+
 # OS and Kernel Information
-local os_kernel="💽 : %{$fg[blue]%}\$(/bin/cat /etc/os-release | /bin/grep PRETTY_NAME | /bin/cut -d '=' -f 2 | /bin/sed 's/\"//g')%{$reset_color%}"
+os_id="$(cat /etc/os-release | grep ^ID= | cut -d '=' -f 2 | sed 's/\"//g')"
+local os_kernel="💽 : %{$fg[blue]%}\$(cat /etc/os-release | grep PRETTY_NAME | cut -d '=' -f 2 | sed 's/\"//g')%{$reset_color%}"
 os_kernel+=" - "
-os_kernel+="%{$fg[yellow]%}Kernel \$(/bin/uname -r)%{$reset_color%}"
+os_kernel+="%{$fg[yellow]%}Kernel \$(uname -r)%{$reset_color%}"
+os_kernel+="$(reboot_checker $os_id)"
 
 # Datetime and Uptime Information
 local datetime="🕰 : %{$fg[green]%}%D{%a %d %b %Y %T %Z}%{$reset_color%}"
 datetime+=" - "
-datetime+="%S%{$fg[magenta]%}\$(/bin/uptime -p)%{$reset_color%}%s"
+datetime+="%S%{$fg[magenta]%}\$(uptime -p)%{$reset_color%}%s"
 
 # Current Directory Information including file data
 local current_directory="📂 : %{$fg[white]$bg[blue]%}%~%{$reset_color%} "
-current_directory+="(%{$fg[red]%}\$(/bin/ls -1 | /usr/bin/wc -l | /bin/sed 's: ::g') files%{$reset_color%} "
-current_directory+="%{$fg[magenta]%}\$(/bin/ls -lah | /bin/grep -m 1 total | /bin/sed 's/total //')b%{$reset_color%})"
+current_directory+="(%{$fg[red]%}\$(ls -1 | wc -l | sed 's: ::g') files%{$reset_color%} "
+current_directory+="%{$fg[magenta]%}\$(ls -lah | grep -m 1 total | sed 's/total //')b%{$reset_color%})"
 
 # Username and Hostname Information
 # Includes a Job Status Result indicated by
