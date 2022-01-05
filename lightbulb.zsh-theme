@@ -11,7 +11,7 @@ function virtualenv_info {
 function reboot_checker () {
   local notice=""
   case $1 in
-    fedora | rhel | centos)
+    fedora | rhel | centos | clearos | rocky)
       if [[ -z $(which needs-restarting 2> /dev/null) ]]; then
         notice=" - %{$fg[cyan]%}To get restart notifications, install yum-utils/dnf-utils%{$reset_color%}"
       elif ! needs-restarting -r > /dev/null ; then
@@ -49,7 +49,12 @@ current_directory+="%{$fg[magenta]%}\$(ls -lah | grep -m 1 total | sed 's/total 
 # Username and Hostname Information
 # Includes a Job Status Result indicated by
 local job_status="%(?:🙂:🤬)"
-local username_hostname="$job_status@🖥 : %{$fg[blue]%}%n%{$reset_color%}"
+if [[ $EUID -ne 0 ]]
+then
+  local username_hostname="$job_status@🖥 : %{$fg[blue]%}%n%{$reset_color%}"
+else
+  local username_hostname="$job_status@🖥 : %{$fg_bold[red]$bg[blue]%}%n%{$reset_color%}"
+fi
 username_hostname+="%{$fg[yellow]%}@%{$reset_color%}"
 username_hostname+="%U%{$fg[cyan]%}%m%u%{$reset_color%}"
 
@@ -62,7 +67,7 @@ $os_kernel
 ╰─$datetime
  ╰─$current_directory
   ╰─$username_hostname
-   ╰─>$tty -> % %{$reset_color%}"
+   ╰─>$tty ->  %{$reset_color%}"
 
 # git settings
 ZSH_THEME_GIT_PROMPT_PREFIX=" %{$fg_bold[blue]%}git:(%{$fg[red]%}"
